@@ -22,11 +22,19 @@ console.log('Working in', rootDir);
 for (const [folder, targetPath] of Object.entries(apps)) {
   const viteConfigPath = path.join(rootDir, folder, 'vite.config.ts');
   const appTsxPath = path.join(rootDir, folder, 'App.tsx');
-  
+  const baseValue = `/UCC-cognition-under-pressure-assessment-test/${targetPath}/`;
+
   if (fs.existsSync(viteConfigPath)) {
     let code = fs.readFileSync(viteConfigPath, 'utf8');
     if (!code.includes('base:')) {
-      code = code.replace('export default defineConfig({', `export default defineConfig({\n  base: '/UCC-cognition-under-pressure-assessment-test/${targetPath}/',`);
+      // Robust replacement for different defineConfig signatures
+      if (code.includes('export default defineConfig({')) {
+        code = code.replace('export default defineConfig({', `export default defineConfig({\n  base: '${baseValue}',`);
+      } else if (code.includes('return {')) {
+        code = code.replace('return {', `return {\n      base: '${baseValue}',`);
+      } else {
+        console.log('Could not find injection point in', viteConfigPath);
+      }
       fs.writeFileSync(viteConfigPath, code);
       console.log('Updated base in', viteConfigPath);
     }
@@ -38,9 +46,14 @@ for (const [folder, targetPath] of Object.entries(apps)) {
       const backLink = `\n      <a href="/" className="mb-4 inline-flex items-center text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-[#4EABBC] transition-colors">← Back to Home Directory</a>`;
       
       const pattern = '<header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">';
+      const pattern2 = '<header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">';
       
       if (code.includes(pattern)) {
         code = code.replace(pattern, `${backLink}\n      ${pattern}`);
+        fs.writeFileSync(appTsxPath, code);
+        console.log('Added Back Link to', appTsxPath);
+      } else if (code.includes(pattern2)) {
+        code = code.replace(pattern2, `${backLink}\n      ${pattern2}`);
         fs.writeFileSync(appTsxPath, code);
         console.log('Added Back Link to', appTsxPath);
       } else {
