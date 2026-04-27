@@ -33,32 +33,32 @@ const App: React.FC = () => {
     {
       title: "Informational — Craft & Structure",
       subtitle: "How is this article built?",
-      link: "/UCC-cognition-under-pressure-assessment-test/reading-informational-craft-structure/"
+      link: "/ucc-cognition-under-pressure-assessment-test/reading-informational-craft-structure/"
     },
     {
       title: "Informational — Key Ideas & Details",
       subtitle: "What really matters in this text?",
-      link: "/UCC-cognition-under-pressure-assessment-test/key-ideas-details/"
+      link: "/ucc-cognition-under-pressure-assessment-test/key-ideas-details/"
     },
     {
       title: "Informational — Range & Complexity",
       subtitle: "How much text can your brain actually hold?",
-      link: "/UCC-cognition-under-pressure-assessment-test/range-complexity/"
+      link: "/ucc-cognition-under-pressure-assessment-test/range-complexity/"
     },
     {
       title: "Literature — Craft & Structure",
       subtitle: "How is this story constructed?",
-      link: "/UCC-cognition-under-pressure-assessment-test/literature-craft-structure/"
+      link: "/ucc-cognition-under-pressure-assessment-test/literature-craft-structure/"
     },
     {
       title: "Literature — Key Ideas & Details",
       subtitle: "What is this story really saying?",
-      link: "/UCC-cognition-under-pressure-assessment-test/literature-key-ideas-details/"
+      link: "/ucc-cognition-under-pressure-assessment-test/literature-key-ideas-details/"
     },
     {
       title: "Reading — Vocabulary",
       subtitle: "How well does your brain know words?",
-      link: "/UCC-cognition-under-pressure-assessment-test/vocabulary/"
+      link: "/ucc-cognition-under-pressure-assessment-test/vocabulary/"
     }
   ];
 
@@ -66,32 +66,32 @@ const App: React.FC = () => {
     {
       title: "Geometry & Spatial Reasoning",
       subtitle: "How well do you see and measure space?",
-      link: "/UCC-cognition-under-pressure-assessment-test/geometry-spatial/"
+      link: "/ucc-cognition-under-pressure-assessment-test/geometry-spatial/"
     },
     {
       title: "Measurement & Data",
       subtitle: "How well do you read the real world?",
-      link: "/UCC-cognition-under-pressure-assessment-test/measurement-data/"
+      link: "/ucc-cognition-under-pressure-assessment-test/measurement-data/"
     },
     {
       title: "Base-10 & Place Value",
       subtitle: "How strong is your number sense?",
-      link: "/UCC-cognition-under-pressure-assessment-test/base-10-place-value/"
+      link: "/ucc-cognition-under-pressure-assessment-test/base-10-place-value/"
     },
     {
       title: "Fractions & Ratios",
       subtitle: "How do you see parts inside wholes?",
-      link: "/UCC-cognition-under-pressure-assessment-test/fractions-ratios/"
+      link: "/ucc-cognition-under-pressure-assessment-test/fractions-ratios/"
     },
     {
       title: "Algebra Readiness",
       subtitle: "How ready is your brain for symbols?",
-      link: "/UCC-cognition-under-pressure-assessment-test/algebra-readiness/"
+      link: "/ucc-cognition-under-pressure-assessment-test/algebra-readiness/"
     },
     {
       title: "Psychometric Console",
       subtitle: "Instrument Analysis Console",
-      link: "/UCC-cognition-under-pressure-assessment-test/test-assessment/",
+      link: "/ucc-cognition-under-pressure-assessment-test/test-assessment/",
     }
   ];
 

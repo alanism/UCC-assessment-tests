@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: '/UCC-cognition-under-pressure-assessment-test/geometry-spatial/',
+      base: '/ucc-cognition-under-pressure-assessment-test/geometry-spatial/',
       server: {
         port: 3000,
         host: '0.0.0.0',

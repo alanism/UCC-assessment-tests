@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: '/UCC-cognition-under-pressure-assessment-test/literature-key-ideas-details/',
+  base: '/ucc-cognition-under-pressure-assessment-test/literature-key-ideas-details/',
   server: {
     port: 3000,
     host: '0.0.0.0',

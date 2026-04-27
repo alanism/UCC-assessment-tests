@@ -7,7 +7,8 @@ echo "Starting Unified Build for Netlify..."
 
 # Clean and prepare directory
 rm -rf dist
-mkdir -p dist/UCC-cognition-under-pressure-assessment-test
+# Standardize to lowercase
+mkdir -p dist/ucc-cognition-under-pressure-assessment-test
 
 echo "========================================="
 echo "Building Home Directory"
@@ -50,9 +51,9 @@ for FOLDER in "${!APP_MAP[@]}"; do
     npm run build
     cd ..
     
-    # Move the output exactly where Netlify expects:
-    mkdir -p "dist/UCC-cognition-under-pressure-assessment-test/$CLEAN_NAME"
-    cp -r "$FOLDER/dist"/* "dist/UCC-cognition-under-pressure-assessment-test/$CLEAN_NAME/"
+    # Move the output exactly where Netlify expects (lowercase path):
+    mkdir -p "dist/ucc-cognition-under-pressure-assessment-test/$CLEAN_NAME"
+    cp -r "$FOLDER/dist"/* "dist/ucc-cognition-under-pressure-assessment-test/$CLEAN_NAME/"
   else
     echo "Warning: Folder $FOLDER not found, skipping."
   fi
