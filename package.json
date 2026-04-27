@@ -1,0 +1,9 @@
+{
+  "name": "ucc-renaissance-star-360-monorepo",
+  "version": "1.0.0",
+  "description": "Unified build environment for UCC x Renaissance apps deployed to Netlify.",
+  "scripts": {
+    "build": "bash ./build.sh"
+  },
+  "devDependencies": {}
+}

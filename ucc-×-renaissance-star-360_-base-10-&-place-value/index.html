@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UCC x Rennaissance STAR 360: Measurement & Data</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cyan: #4EABBC;
+      --orange: #E9604F;
+      --yellow: #FFFFD5;
+      --ink: #111827;
+    }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background-color: #FFFFFF;
+      background-image:
+        radial-gradient(rgba(0,0,0,0.08) 1px, transparent 1px),
+        radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 16px 16px, 8px 8px;
+      background-position: 1px 1px, 1px 1px;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    .ucc-title {
+      font-family: 'Permanent Marker', cursive;
+      letter-spacing: 0.6px;
+    }
+
+    .ucc-ui {
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .ucc-card {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(8px);
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.10);
+    }
+
+    .ucc-primary {
+      background: var(--cyan);
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 18px rgba(78, 171, 188, 0.25);
+      transition: all 0.2s ease;
+    }
+    .ucc-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(78, 171, 188, 0.35);
+    }
+
+    .score-big {
+      font-size: 64px;
+      color: var(--cyan);
+      font-family: "Permanent Marker";
+      line-height: 1;
+    }
+
+    /* Custom Scrollbar for better UCC look */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--cyan);
+      border-radius: 10px;
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.36.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
