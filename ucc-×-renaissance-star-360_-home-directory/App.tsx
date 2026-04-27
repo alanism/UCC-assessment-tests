@@ -66,12 +66,12 @@ const App: React.FC = () => {
     {
       title: "Geometry & Spatial Reasoning",
       subtitle: "How well do you see and measure space?",
-      link: "https://ucc-renaissance-star-360-geometry-spatial-374759652109.us-west1.run.app/"
+      link: "/UCC-cognition-under-pressure-assessment-test/geometry-spatial/"
     },
     {
       title: "Measurement & Data",
       subtitle: "How well do you read the real world?",
-      link: "https://ucc-x-rennaissance-star-360-measurement-data-374759652109.us-west1.run.app/"
+      link: "/UCC-cognition-under-pressure-assessment-test/measurement-data/"
     },
     {
       title: "Base-10 & Place Value",
@@ -81,7 +81,7 @@ const App: React.FC = () => {
     {
       title: "Fractions & Ratios",
       subtitle: "How do you see parts inside wholes?",
-      link: "https://ucc-x-rennaissance-star-360-fractions-374759652109.us-west1.run.app/"
+      link: "/UCC-cognition-under-pressure-assessment-test/fractions-ratios/"
     },
     {
       title: "Algebra Readiness",
@@ -166,7 +166,7 @@ const App: React.FC = () => {
       <div id="explainer-bento">
         {informationalPanels.map((panel, idx) => (
           <div key={idx} className="ucc-card p-8 border-l-[4px] border-gray-200">
-            <h3 className="text-xs font-black uppercase tracking-widest text-[#111827] mb-6 opacity-40">
+            <h3 className="text-sm font-black uppercase tracking-widest text-[#111827] mb-6 opacity-40">
               {panel.title}
             </h3>
             <div className="text-sm leading-relaxed text-gray-600 whitespace-pre-wrap font-medium">

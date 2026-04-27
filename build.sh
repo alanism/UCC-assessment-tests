@@ -32,6 +32,9 @@ APP_MAP=(
   ["ucc-×-renaissance-star-360_-reading--informational_-craft-&-structure"]="reading-informational-craft-structure"
   ["ucc-×-renaissance-star-360_-test-assessment"]="test-assessment"
   ["ucc-×-renaissance-star-360_-vocabulary"]="vocabulary"
+  ["UCC-Renaissance-STAR-360-Geometry-Spatial-main"]="geometry-spatial"
+  ["UCC-x-Rennaissance-STAR-360-Measurement-Data-main"]="measurement-data"
+  ["UCC-x-Renaissance-Star-360-Fractions---Visual-Ratio-Number-Sense-Lab-main"]="fractions-ratios"
 )
 
 # Loop over the apps and build each one

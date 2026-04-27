@@ -2,6 +2,9 @@
 
 This repository contains 10 standalone Vite/React apps that simulate or support STAR 360-style cognitive instruments across reading, vocabulary, math, and post-session psychometric analysis.
 
+**Live Suite:** [https://unrivaled-kangaroo-9e7478.netlify.app](https://unrivaled-kangaroo-9e7478.netlify.app)
+**GitHub Repository:** [https://github.com/alanism/UCC-assessment-tests](https://github.com/alanism/UCC-assessment-tests)
+
 ## Suite Notes
 
 - Each app is deployable on its own origin.
