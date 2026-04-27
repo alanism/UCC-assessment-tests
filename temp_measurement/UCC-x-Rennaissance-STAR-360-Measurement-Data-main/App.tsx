@@ -1,4 +1,4 @@
-import { AiSettingsPanel } from "./components/AiSettingsPanel";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Difficulty, AriaState, MathOperation, Problem, BrainPillars, ItemTelemetry } from './types';
 import { generateProblem } from './constants';
@@ -8,10 +8,10 @@ import { BrainAnalytics } from './components/BrainAnalytics';
 import { SwissClockTimer } from './components/SwissClockTimer';
 
 const App: React.FC = () => {
-  const [sessionState, setSessionState] = useState<'setup' | 'testing' | 'review'>('setup');
-  const [studentName, setStudentName] = useState('');
-  const [reportedGrade, setReportedGrade] = useState('');
-  const [sessionLength, setSessionLength] = useState(10); // Default 10 mins
+  const [viewState, setViewState] = useState<'setup' | 'testing' | 'review'>('setup');
+  const [studentName, setStudentName] = useState<string>('');
+  const [reportedGrade, setReportedGrade] = useState<string>('');
+  const [selectedSessionTime, setSelectedSessionTime] = useState<number>(300); // Default 5 mins (300s)
 
   const [difficulty, setDifficulty] = useState<Difficulty>(1);
   const [maxDifficultyReached, setMaxDifficultyReached] = useState<Difficulty>(1);
@@ -21,22 +21,18 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'training' | 'analytics'>('training');
   const [userInput, setUserInput] = useState<string>('');
   const [ariaState, setAriaState] = useState<AriaState>(AriaState.Thinking);
-  const [ariaMessage, setAriaMessage] = useState<string>("Look at the space. Your brain can read the geometry.");
+  const [ariaMessage, setAriaMessage] = useState<string>("Ready to measure the world? Let's start the log.");
   const [hintIndex, setHintIndex] = useState<number>(-1);
-  const [timer, setTimer] = useState<number>(30);
-  const [globalTimer, setGlobalTimer] = useState<number>(600);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  const [itemTimer, setItemTimer] = useState<number>(30);
+  const [isItemTimerRunning, setIsItemTimerRunning] = useState<boolean>(false);
 
-  const startTimeRef = useRef<number>(Date.now());
-  const sessionStartRef = useRef<number>(Date.now());
+  // Session-level tracking
+  const [sessionRemainingSeconds, setSessionRemainingSeconds] = useState<number>(300);
+  const sessionStartTimeRef = useRef<number>(0);
+  const itemStartTimeRef = useRef<number>(Date.now());
 
   // Pillars State
   const [pillars, setPillars] = useState<BrainPillars>({
-    student_name: '',
-    reported_grade: '',
-    session_timer_seconds: 600,
-    session_elapsed_ms: 0,
-    session_timeout_reached: false,
     crystalMemory: {
       tablesSeen: [],
       operationsUsed: [],
@@ -50,25 +46,43 @@ const App: React.FC = () => {
     totalTime: 0,
     attempts: 0,
     levelHistory: [],
-    itemLog: []
+    itemLog: [],
+    studentName: '',
+    reportedGrade: '',
+    sessionTimerSeconds: 0,
+    sessionElapsedMs: 0,
+    sessionTimeoutReached: false
   });
 
-  // Global Session Timer
-  useEffect(() => {
-    let interval: any;
-    if (sessionState === 'testing' && globalTimer > 0) {
-      interval = setInterval(() => {
-        setGlobalTimer(prev => prev - 1);
-      }, 1000);
-    } else if (globalTimer === 0 && sessionState === 'testing') {
-      handleFinish(true);
+  const triggerSessionFinish = (timeout: boolean = false) => {
+    setViewState('review');
+    setIsItemTimerRunning(false);
+    setActiveTab('analytics');
+    setAriaMessage("Measurement Data Evaluation complete. Review your cognitive metrics.");
+    
+    setPillars(prev => ({
+      ...prev,
+      sessionElapsedMs: Date.now() - sessionStartTimeRef.current,
+      sessionTimeoutReached: timeout
+    }));
+
+    if (timeout) {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.5);
     }
-    return () => clearInterval(interval);
-  }, [globalTimer, sessionState]);
+  };
 
   const handleAdaptiveAdvance = (isCorrect: boolean, studentAnswer: string) => {
-    const timeTaken = 30 - timer;
-    const timeTakenMs = Date.now() - startTimeRef.current;
+    const timeTaken = 30 - itemTimer;
+    const timeTakenMs = Date.now() - itemStartTimeRef.current;
 
     let nextDifficulty = difficulty;
     if (isCorrect) {
@@ -79,12 +93,6 @@ const App: React.FC = () => {
 
     const telemetry: ItemTelemetry = {
       id: problemNumber,
-      student_name: studentName,
-      reported_grade: reportedGrade,
-      session_timer_seconds: sessionLength * 60,
-      session_elapsed_ms: Date.now() - sessionStartRef.current,
-      session_timeout_reached: false,
-      domain: "Geometry",
       schema: currentProblem.title,
       grade: currentProblem.grade,
       tableData: [...currentProblem.tableData],
@@ -97,9 +105,7 @@ const App: React.FC = () => {
       hintsUsed: hintIndex + 1,
       difficultyBefore: difficulty,
       difficultyAfter: nextDifficulty,
-      timestamp: new Date().toISOString(),
-      // Fix: include emoji in telemetry for analytics
-      emoji: currentProblem.emoji
+      timestamp: new Date().toISOString()
     };
 
     setDifficulty(nextDifficulty);
@@ -109,7 +115,7 @@ const App: React.FC = () => {
       ...prev,
       totalAnswers: prev.totalAnswers + (isCorrect ? 1 : 0),
       frameCorrectness: prev.frameCorrectness + (isCorrect ? 1 : 0),
-      speedBonuses: prev.speedBonuses + (isCorrect && timer > 15 ? 1 : 0),
+      speedBonuses: prev.speedBonuses + (isCorrect && itemTimer > 15 ? 1 : 0),
       totalTime: prev.totalTime + timeTaken,
       levelHistory: [...prev.levelHistory, { difficulty, time: timeTaken, accuracy: isCorrect ? 1 : 0 }],
       itemLog: [...prev.itemLog, telemetry],
@@ -123,26 +129,42 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let interval: any;
-    if (isTimerRunning && timer > 0) {
+    if (viewState === 'testing' && sessionRemainingSeconds > 0) {
       interval = setInterval(() => {
-        setTimer(prev => prev - 1);
+        setSessionRemainingSeconds(prev => {
+          if (prev <= 1) {
+            triggerSessionFinish(true);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (timer === 0 && isTimerRunning) {
-      setIsTimerRunning(false);
+    }
+    return () => clearInterval(interval);
+  }, [viewState, sessionRemainingSeconds]);
+
+  useEffect(() => {
+    let interval: any;
+    if (isItemTimerRunning && itemTimer > 0) {
+      interval = setInterval(() => {
+        setItemTimer(prev => prev - 1);
+      }, 1000);
+    } else if (itemTimer === 0 && isItemTimerRunning) {
+      setIsItemTimerRunning(false);
       setAriaState(AriaState.Error);
-      setAriaMessage(`Time's up! The space was ${currentProblem.correctAnswer} units.`);
+      setAriaMessage(`Time's up! The missing value was ${currentProblem.correctAnswer}.`);
       
       setPillars(prev => ({ ...prev, attempts: prev.attempts + 1 }));
       handleAdaptiveAdvance(false, userInput || "(timed out)");
       
       setTimeout(() => {
-        if (sessionState === 'testing') {
+        if (viewState === 'testing') {
           setProblemNumber(prev => prev + 1);
         }
       }, 1500);
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, timer, sessionState, currentProblem]);
+  }, [isItemTimerRunning, itemTimer, viewState, currentProblem]);
 
   const startNewProblem = (newDiff: Difficulty) => {
     const nextProblem = generateProblem(newDiff);
@@ -150,43 +172,17 @@ const App: React.FC = () => {
     setUserInput('');
     setHintIndex(-1);
     setAriaState(AriaState.Thinking);
-    setAriaMessage(`Spatial Puzzle #${problemNumber}: What does this shape tell you?`);
-    setTimer(30);
-    startTimeRef.current = Date.now();
-    setIsTimerRunning(true);
-
-    setPillars(prev => ({
-      ...prev,
-      crystalMemory: {
-        ...prev.crystalMemory,
-        tablesSeen: Array.from(new Set([...prev.crystalMemory.tablesSeen, nextProblem.title]))
-      }
-    }));
+    setAriaMessage(`Problem #${problemNumber}: What really happened here?`);
+    setItemTimer(30);
+    itemStartTimeRef.current = Date.now();
+    setIsItemTimerRunning(true);
   };
 
   useEffect(() => {
-    console.log("[App] Geometry Component Mounted Successfully.");
-    return () => console.log("[App] Geometry Component Unmounting.");
-  }, []);
-
-  useEffect(() => {
-    if (sessionState === 'testing') {
+    if (viewState === 'testing') {
       startNewProblem(difficulty);
     }
-  }, [problemNumber, sessionState]);
-
-  const handleStartTest = () => {
-    if (!studentName || !reportedGrade) return;
-    setGlobalTimer(sessionLength * 60);
-    sessionStartRef.current = Date.now();
-    setPillars(prev => ({
-      ...prev,
-      student_name: studentName,
-      reported_grade: reportedGrade,
-      session_timer_seconds: sessionLength * 60
-    }));
-    setSessionState('testing');
-  };
+  }, [problemNumber, viewState]);
 
   const handleHint = () => {
     const nextIdx = hintIndex + 1;
@@ -195,27 +191,27 @@ const App: React.FC = () => {
       setAriaMessage(currentProblem.hints[nextIdx]);
       setPillars(prev => ({ ...prev, hintsUsed: prev.hintsUsed + 1 }));
     } else {
-      setAriaMessage("The shape holds the answer. Look closely at the parts.");
+      setAriaMessage("That's the last hint! Trust your mental model.");
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput || sessionState !== 'testing') return;
+    if (!userInput || viewState === 'review') return;
 
     const numericVal = parseInt(userInput);
     const isCorrect = numericVal === currentProblem.correctAnswer;
     
-    setIsTimerRunning(false);
+    setIsItemTimerRunning(false);
     setPillars(prev => ({ ...prev, attempts: prev.attempts + 1 }));
 
     if (isCorrect) {
       setAriaState(AriaState.Success);
-      setAriaMessage("Correct! Your brain read the geometry perfectly.");
+      setAriaMessage("Correct! Your reading of the world is precise.");
       handleAdaptiveAdvance(true, userInput);
     } else {
       setAriaState(AriaState.Error);
-      setAriaMessage(`Not quite. The missing part was ${currentProblem.correctAnswer}.`);
+      setAriaMessage(`Not quite. The correct value was ${currentProblem.correctAnswer}.`);
       setPillars(prev => ({
         ...prev,
         crystalMemory: {
@@ -227,27 +223,22 @@ const App: React.FC = () => {
     }
 
     setTimeout(() => {
-      if (sessionState === 'testing') {
+      if (viewState === 'testing') {
         setProblemNumber(prev => prev + 1);
       }
     }, 1500);
   };
 
-  const handleFinish = (timeout = false) => {
-    if (timeout) {
-      try {
-        const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-        audio.play().catch(() => {});
-      } catch(e) {}
-    }
-    setSessionState('review');
-    setIsTimerRunning(false);
-    setActiveTab('analytics');
-    setAriaMessage("Spatial Reasoning Evaluation complete. Review your cognitive metrics.");
+  const handleStartTest = () => {
+    if (!studentName || !reportedGrade) return;
+    setViewState('testing');
+    setSessionRemainingSeconds(selectedSessionTime);
+    sessionStartTimeRef.current = Date.now();
     setPillars(prev => ({
       ...prev,
-      session_elapsed_ms: Date.now() - sessionStartRef.current,
-      session_timeout_reached: timeout
+      studentName,
+      reportedGrade,
+      sessionTimerSeconds: selectedSessionTime
     }));
   };
 
@@ -257,99 +248,22 @@ const App: React.FC = () => {
   const hintPenalty = pillars.hintsUsed * 2;
   const brainPower = (accuracy * 40) + (speedScore * 30) + (frameScore * 20) - hintPenalty;
 
-  if (sessionState === 'setup') {
-    return (
-      <div className="max-w-4xl mx-auto p-8 ucc-ui min-h-screen flex flex-col justify-center">
-        <div className="ucc-card p-12 border-t-[8px] border-[#4EABBC]">
-          <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mb-2 font-sans">UnCommon Core powered</p>
-          <h1 className="ucc-title text-5xl text-[#111827] mb-2">Math: Geometry & Spatial Reasoning</h1>
-          <p className="text-xl text-[#4EABBC] mb-8 font-medium italic">Star 360 conditions. Built with cognitive science.</p>
-          
-          <div className="space-y-4 mb-10">
-            <p className="text-gray-700 font-medium text-lg leading-relaxed">This isn’t a geometry test. It’s a live map of how your brain sees space.</p>
-            <p className="text-gray-600 font-medium">You’ll solve quick spatial puzzles under a clock—then get a clear coach summary you can use to improve.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-            <div className="space-y-4 col-span-full">
-               <p className="text-sm font-black uppercase text-gray-400 tracking-wider">Enter your name and grade to start.</p>
-            </div>
-            <div className="space-y-4">
-              <label className="block text-xs font-black uppercase text-gray-400">Student Name</label>
-              <input 
-                value={studentName}
-                onChange={e => setStudentName(e.target.value)}
-                className="w-full bg-gray-50 border-2 border-gray-200 p-4 rounded-xl font-bold focus:border-[#4EABBC] focus:outline-none"
-                placeholder="Full Name"
-              />
-            </div>
-            <div className="space-y-4">
-              <label className="block text-xs font-black uppercase text-gray-400">Reported Grade</label>
-              <select 
-                value={reportedGrade}
-                onChange={e => setReportedGrade(e.target.value)}
-                className="w-full bg-gray-50 border-2 border-gray-200 p-4 rounded-xl font-bold focus:border-[#4EABBC] focus:outline-none"
-              >
-                <option value="">Select Grade</option>
-                <option value="3">Grade 3</option>
-                <option value="4">Grade 4</option>
-                <option value="5">Grade 5</option>
-                <option value="6">Grade 6</option>
-                <option value="7">Grade 7</option>
-              </select>
-            </div>
-            <div className="space-y-4 col-span-full">
-              <label className="block text-xs font-black uppercase text-gray-400 tracking-wider">Pick your session length.</label>
-              <div className="flex gap-4">
-                {[5, 10, 25].map(len => (
-                  <button 
-                    key={len}
-                    onClick={() => setSessionLength(len)}
-                    className={`flex-1 py-4 rounded-xl font-bold border-2 transition-all ${sessionLength === len ? 'bg-[#4EABBC] border-[#4EABBC] text-white shadow-lg' : 'bg-white border-gray-200 text-gray-400 hover:border-[#4EABBC]'}`}
-                  >
-                    {len} Minutes
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center gap-4">
-            <button 
-              onClick={handleStartTest}
-              disabled={!studentName || !reportedGrade}
-              className="w-full ucc-primary py-5 text-xl font-bold uppercase tracking-widest disabled:opacity-50"
-            >
-              START TEST
-            </button>
-            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Once you start, these lock.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const formatSessionTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 ucc-ui">
-      
-      <a href="/" className="mb-4 inline-flex items-center text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-[#4EABBC] transition-colors">← Back to Home Directory</a>
       <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
         <div>
+          <p className="text-[#4EABBC] text-[10px] font-black uppercase tracking-[0.3em] mb-1">
+            UnCommon Core powered
+          </p>
           <h1 className="ucc-title text-3xl md:text-4xl lg:text-5xl text-[#111827] tracking-tighter uppercase">
-            Math: Geometry & Spatial Reasoning
+            Math: Measurement & Data
           </h1>
           <p className="text-gray-500 text-xs mt-1 font-black uppercase tracking-[0.2em]">
-            This isn’t a math test. It’s how your brain maps the world.
+            STAR 360 meets real-world thinking under pressure
           </p>
         </div>
         
-        {sessionState === 'review' ? (
+        {viewState === 'review' && (
           <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
             <button 
               onClick={() => setActiveTab('training')}
@@ -364,24 +278,99 @@ const App: React.FC = () => {
               🧠 Session Summary
             </button>
           </div>
-        ) : (
-          <div className="bg-[#111827] text-white px-6 py-3 rounded-2xl flex items-center gap-4 shadow-xl">
-             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Session Ends</span>
-             <span className="text-2xl font-mono font-bold text-[#4EABBC]">{formatSessionTime(globalTimer)}</span>
+        )}
+
+        {viewState === 'testing' && (
+          <div className="flex items-center gap-4 bg-gray-50 px-6 py-2 rounded-xl border border-gray-100 shadow-sm">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Session Clock:</span>
+            <span className={`font-mono font-bold text-lg ${sessionRemainingSeconds < 60 ? 'text-[#E9604F] animate-pulse' : 'text-[#111827]'}`}>
+              {Math.floor(sessionRemainingSeconds / 60)}:{(sessionRemainingSeconds % 60).toString().padStart(2, '0')}
+            </span>
           </div>
         )}
       </header>
-        <AiSettingsPanel purpose="Stores operator-selected provider and model locally for this origin." />
 
-      {activeTab === 'training' ? (
+      {viewState === 'setup' ? (
+        <div className="max-w-xl mx-auto ucc-card p-10 space-y-8 border-t-[6px] border-[#4EABBC]">
+          <div className="text-center space-y-4">
+            <h2 className="ucc-title text-2xl text-[#111827]">Enter your name and grade to begin.</h2>
+            <div className="space-y-3 px-2">
+              <p className="text-gray-600 font-medium text-lg leading-relaxed">
+                This short test shows how your brain reads the real world when time is tight — things like distance, time, and how much fits in a space.
+              </p>
+              <p className="text-[#4EABBC] font-bold text-sm">
+                It builds speed, focus, and calm thinking while it maps how you solve problems.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1.5 ml-1">Student Name</label>
+              <input 
+                type="text" 
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="Ex: Chloe Miller"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl px-5 py-3.5 focus:outline-none focus:border-[#4EABBC] font-bold text-[#111827] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1.5 ml-1">Reported Grade</label>
+              <select 
+                value={reportedGrade}
+                onChange={(e) => setReportedGrade(e.target.value)}
+                className="w-full bg-white border-2 border-gray-100 rounded-xl px-5 py-3.5 focus:outline-none focus:border-[#4EABBC] font-bold text-[#111827] appearance-none"
+              >
+                <option value="">Select Grade...</option>
+                <option value="3">Grade 3</option>
+                <option value="4">Grade 4</option>
+                <option value="5">Grade 5</option>
+                <option value="6">Grade 6</option>
+                <option value="7">Grade 7</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1.5 ml-1">Session Duration</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[300, 600, 1500].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedSessionTime(s)}
+                    className={`py-3 px-2 rounded-xl font-bold text-sm transition-all border-2 ${selectedSessionTime === s ? 'border-[#4EABBC] bg-[#4EABBC]/5 text-[#4EABBC]' : 'border-gray-100 text-gray-400 hover:border-gray-200'}`}
+                  >
+                    {s / 60} mins
+                  </button>
+                ))}
+              </div>
+              <p className="mt-4 text-[11px] text-gray-500 font-medium text-center italic leading-relaxed">
+                When the clock is on, your brain learns to think faster, stay calm, and spot patterns.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-4 space-y-4">
+            <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              When you finish, you’ll see a clear map of how your thinking is growing.
+            </p>
+            <button
+              onClick={handleStartTest}
+              disabled={!studentName || !reportedGrade}
+              className="w-full ucc-primary py-4 font-black uppercase tracking-widest text-sm disabled:opacity-40"
+            >
+              Start Measurement Lab
+            </button>
+          </div>
+        </div>
+      ) : activeTab === 'training' ? (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
              <div className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-[#4EABBC] font-bold shadow-sm">
-               Spatial Puzzle #{problemNumber}
+               Entry #{problemNumber}
              </div>
-             {sessionState === 'testing' && (
+             {viewState === 'testing' && (
                <button 
-                 onClick={() => handleFinish(false)}
+                 onClick={() => triggerSessionFinish()}
                  className="px-6 py-2 rounded-xl bg-gray-50 hover:bg-[#E9604F] text-[#E9604F] hover:text-white border border-gray-200 transition-all text-xs font-bold uppercase tracking-wider shadow-sm"
                >
                  End Evaluation
@@ -391,7 +380,7 @@ const App: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="ucc-card p-8 flex flex-col justify-between space-y-6 border-t-[6px] border-[#4EABBC]">
-              {sessionState === 'review' && activeTab === 'training' ? (
+              {viewState === 'review' && activeTab === 'training' ? (
                 <div className="flex flex-col items-center justify-center h-64 text-center space-y-4">
                    <h2 className="ucc-title text-2xl text-[#4EABBC]">Session Locked</h2>
                    <p className="text-gray-500 font-medium">Evaluation complete. Visit the Session Summary tab for your full report.</p>
@@ -401,13 +390,13 @@ const App: React.FC = () => {
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h2 className="ucc-title text-2xl text-[#111827]">{currentProblem.title}</h2>
-                      <SwissClockTimer secondsRemaining={timer} totalSeconds={30} />
+                      <SwissClockTimer secondsRemaining={itemTimer} totalSeconds={30} />
                     </div>
                     
                     <table className="w-full text-left mb-6 overflow-hidden rounded-xl border border-gray-100">
                       <thead>
                         <tr className="bg-gray-50">
-                          <th className="p-4 text-xs font-bold uppercase text-gray-500 tracking-wider">Spatial Data</th>
+                          <th className="p-4 text-xs font-bold uppercase text-gray-500 tracking-wider">Metric Label</th>
                           <th className="p-4 text-xs font-bold uppercase text-gray-500 tracking-wider">Value</th>
                         </tr>
                       </thead>
@@ -429,29 +418,29 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <form onSubmit={handleSubmit} className="flex gap-3">
-                    <input
-                      type="number"
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      placeholder="Enter part..."
-                      className="flex-1 bg-white border-2 border-gray-200 rounded-xl px-5 py-3.5 text-[#111827] font-bold text-lg focus:outline-none focus:border-[#4EABBC] transition-all placeholder:text-gray-300 shadow-inner"
-                      disabled={sessionState !== 'testing'}
-                      autoFocus
-                    />
-                    <button 
-                      type="submit"
-                      className="ucc-primary px-8 py-3.5 font-bold text-lg active:scale-95 disabled:opacity-50"
-                      disabled={sessionState !== 'testing'}
-                    >
-                      Check
-                    </button>
+                      <form onSubmit={handleSubmit} className="flex gap-3">
+                      <input
+                        type="number"
+                        value={userInput}
+                        onChange={(e) => setUserInput(e.target.value)}
+                        placeholder="Enter quantity..."
+                        className="flex-1 bg-white border-2 border-gray-200 rounded-xl px-5 py-3.5 text-[#111827] font-bold text-lg focus:outline-none focus:border-[#4EABBC] transition-all placeholder:text-gray-300 shadow-inner"
+                        disabled={viewState === 'review'}
+                        autoFocus
+                      />
+                      <button 
+                        type="submit"
+                        className="ucc-primary px-8 py-3.5 font-bold text-lg active:scale-95 disabled:opacity-50"
+                        disabled={viewState === 'review'}
+                      >
+                        Check
+                      </button>
                     </form>
                     <button 
-                    onClick={handleHint}
-                    className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hover:text-[#4EABBC] transition-colors"
+                      onClick={handleHint}
+                      className="text-[10px] text-gray-400 font-bold uppercase tracking-widest hover:text-[#4EABBC] transition-colors"
                     >
-                    Get a Hint (Costs brain power.)
+                      Get a Hint (Costs performance.)
                     </button>
                   </div>
                 </>
@@ -461,11 +450,11 @@ const App: React.FC = () => {
             <EmojiViz emoji={currentProblem.emoji} data={currentProblem.tableData.map(row => ({ label: row.label, value: row.value || 0 }))} />
             <AriaAvatar state={ariaState} message={ariaMessage} />
 
-            <div className={`ucc-card p-8 flex flex-col justify-between border-t-[6px] border-[#E9604F] transition-opacity duration-500 ${sessionState === 'testing' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`ucc-card p-8 flex flex-col justify-between border-t-[6px] border-[#E9604F] transition-opacity duration-500 ${viewState === 'testing' ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
               <div>
                 <h3 className="ucc-title text-xl mb-6 text-[#E9604F]">Cognitive Pillars</h3>
                 <div className="space-y-6">
-                  {sessionState === 'review' && (
+                  {viewState === 'review' && (
                     <div className="grid grid-cols-3 gap-3">
                       <div className="text-center p-4 rounded-2xl bg-white border border-gray-100 shadow-sm">
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Fluidity</p>
@@ -484,7 +473,7 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {sessionState === 'review' && (
+              {viewState === 'review' && (
                 <div className="mt-8 p-6 rounded-2xl bg-gray-50 border border-gray-100 shadow-inner">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Performance Index</span>
@@ -506,12 +495,12 @@ const App: React.FC = () => {
           pillars={pillars} 
           brainPower={brainPower} 
           maxDifficultyReached={maxDifficultyReached} 
-          sessionFinished={sessionState === 'review'} 
+          sessionFinished={viewState === 'review'} 
         />
       )}
       
       <footer className="text-center text-gray-300 text-[10px] font-black uppercase tracking-[0.3em] py-12">
-        Geometry & Spatial Logic System &copy; 2024
+        Measurement & Data Logic System &copy; 2024
       </footer>
     </div>
   );

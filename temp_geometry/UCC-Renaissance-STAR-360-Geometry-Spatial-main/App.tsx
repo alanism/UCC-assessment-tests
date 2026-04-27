@@ -1,4 +1,3 @@
-import { AiSettingsPanel } from "./components/AiSettingsPanel";
 import React, { useState, useEffect, useRef } from 'react';
 import { Difficulty, AriaState, MathOperation, Problem, BrainPillars, ItemTelemetry } from './types';
 import { generateProblem } from './constants';
@@ -163,11 +162,6 @@ const App: React.FC = () => {
       }
     }));
   };
-
-  useEffect(() => {
-    console.log("[App] Geometry Component Mounted Successfully.");
-    return () => console.log("[App] Geometry Component Unmounting.");
-  }, []);
 
   useEffect(() => {
     if (sessionState === 'testing') {
@@ -337,8 +331,6 @@ const App: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 ucc-ui">
-      
-      <a href="/" className="mb-4 inline-flex items-center text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-[#4EABBC] transition-colors">← Back to Home Directory</a>
       <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
         <div>
           <h1 className="ucc-title text-3xl md:text-4xl lg:text-5xl text-[#111827] tracking-tighter uppercase">
@@ -371,7 +363,6 @@ const App: React.FC = () => {
           </div>
         )}
       </header>
-        <AiSettingsPanel purpose="Stores operator-selected provider and model locally for this origin." />
 
       {activeTab === 'training' ? (
         <div className="space-y-6">
